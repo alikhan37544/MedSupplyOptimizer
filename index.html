@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediTrack - Healthcare Inventory Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+        }
+        
+        .sidebar {
+            background-color: #2c3e50;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding-top: 20px;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            padding: 10px 15px;
+        }
+        
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .dashboard-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+    margin-bottom: 20px; /* Added consistent margin */
+    display: flex;
+    flex-direction: column;
+}
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-good {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-low {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .activity-item {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .expiring-item {
+            background-color: #fff8e1;
+            border-left: 3px solid var(--warning-color);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box input {
+            padding-left: 40px;
+            border-radius: 20px;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 12px;
+            color: #6c757d;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .pagination .page-link {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar d-none d-md-block">
+                <div class="text-center mb-4">
+                    <h3><i class="fas fa-hospital me-2"></i>MediTrack</h3>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-boxes"></i> Inventory</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-pills"></i> Medications</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-shield-alt"></i> PPE</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-tools"></i> Equipment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-file-alt"></i> Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-cog"></i> Settings</a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10 ms-sm-auto main-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Inventory Dashboard</h2>
+                    <div class="d-flex align-items-center">
+                        <div class="search-box me-3">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="form-control" placeholder="Search inventory...">
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1"></i> Admin User
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card dashboard-card">
+                            <div class="card-body text-center">
+                                <div class="card-icon text-primary">
+                                    <i class="fas fa-boxes"></i>
+                                </div>
+                                <h5 class="card-title">Total Items</h5>
+                                <h2 class="mb-3">2,547</h2>
+                                <p class="text-success mb-0"><i class="fas fa-arrow-up me-1"></i> +3.2% from last month</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card dashboard-card">
+                            <div class="card-body text-center">
+                                <div class="card-icon text-success">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h5 class="card-title">Items in Stock</h5>
+                                <h2 class="mb-3">1,893</h2>
+                                <p class="text-muted mb-0">74.3% of total inventory</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card dashboard-card">
+                            <div class="card-body text-center">
+                                <div class="card-icon text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <h5 class="card-title">Low Stock Items</h5>
+                                <h2 class="mb-3">342</h2>
+                                <p class="text-muted mb-0">13.4% of total inventory</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card dashboard-card">
+                            <div class="card-body text-center">
+                                <div class="card-icon text-danger">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <h5 class="card-title">Out of Stock</h5>
+                                <h2 class="mb-3">312</h2>
+                                <p class="text-muted mb-0">12.3% of total inventory</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Inventory Table -->
+                    <div class="col-lg-8 mb-4">
+                        <div class="card dashboard-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title">Inventory Items</h5>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary me-2">All Items</button>
+                                        <button class="btn btn-sm btn-outline-danger me-2">Critical Items</button>
+                                        <button class="btn btn-sm btn-outline-success">Recently Updated</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Category</th>
+                                                <th>Location</th>
+                                                <th>Quantity</th>
+                                                <th>Status</th>
+                                                <th>Last Updated</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Surgical Masks</td>
+                                                <td>PPE</td>
+                                                <td>Storage A</td>
+                                                <td>1,250</td>
+                                                <td><span class="status-badge status-good">Good Stock</span></td>
+                                                <td>Today, 9:41 AM</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Nitrile Gloves (M)</td>
+                                                <td>PPE</td>
+                                                <td>Storage B</td>
+                                                <td>850</td>
+                                                <td><span class="status-badge status-medium">Medium Stock</span></td>
+                                                <td>Yesterday, 2:30 PM</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Insulin</td>
+                                                <td>Medication</td>
+                                                <td>Pharmacy</td>
+                                                <td>120</td>
+                                                <td><span class="status-badge status-low">Low Stock</span></td>
+                                                <td>Jun 12, 2023</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>IV Solution (1L)</td>
+                                                <td>Fluids</td>
+                                                <td>Storage C</td>
+                                                <td>432</td>
+                                                <td><span class="status-badge status-good">Good Stock</span></td>
+                                                <td>Jun 10, 2023</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Syringes (10ml)</td>
+                                                <td>Supplies</td>
+                                                <td>Storage A</td>
+                                                <td>75</td>
+                                                <td><span class="status-badge status-low">Low Stock</span></td>
+                                                <td>Jun 9, 2023</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Gauze Pads</td>
+                                                <td>Supplies</td>
+                                                <td>Storage B</td>
+                                                <td>620</td>
+                                                <td><span class="status-badge status-good">Good Stock</span></td>
+                                                <td>Jun 8, 2023</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Ventilator Filters</td>
+                                                <td>Equipment</td>
+                                                <td>ICU Storage</td>
+                                                <td>28</td>
+                                                <td><span class="status-badge status-low">Low Stock</span></td>
+                                                <td>Jun 7, 2023</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="text-muted">
+                                        Showing 1-7 of 2,547 items
+                                    </div>
+                                    <nav aria-label="Page navigation">
+                                        <ul class="pagination pagination-sm">
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" tabindex="-1">Previous</a>
+                                            </li>
+                                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="#">Next</a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar -->
+                    <div class="col-lg-4">
+                        <!-- Recent Activity -->
+                        <div class="card dashboard-card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Recent Activity</h5>
+                                <div class="activity-item">
+                                    <p class="mb-1"><strong>Dr. Sarah Johnson</strong> added <strong>200 Surgical Masks</strong></p>
+                                    <p class="text-muted small mb-0">Today, 9:41 AM</p>
+                                </div>
+                                <div class="activity-item">
+                                    <p class="mb-1 text-danger"><strong>Insulin stock is running low (120 units remaining)</strong></p>
+                                    <p class="text-muted small mb-0">Yesterday, 4:23 PM</p>
+                                </div>
+                                <div class="activity-item">
+                                    <p class="mb-1"><strong>Order #38291</strong> received: <strong>500 Nitrile Gloves (M)</strong></p>
+                                    <p class="text-muted small mb-0">Yesterday, 2:30 PM</p>
+                                </div>
+                                <div class="activity-item">
+                                    <p class="mb-1"><strong>Nurse Michael</strong> removed <strong>25 Syringes (10ml)</strong></p>
+                                    <p class="text-muted small mb-0">Jun 12, 2023</p>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <a href="#" class="btn btn-sm btn-outline-primary">View All Activity</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expiring Items -->
+                        <div class="card dashboard-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Expiring Items</h5>
+                                <div class="expiring-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Epinephrine Injections</strong>
+                                        <span class="text-danger">Expires in 5 days</span>
+                                    </div>
+                                    <p class="mb-0">15 units</p>
+                                </div>
+                                <div class="expiring-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Lidocaine 2%</strong>
+                                        <span class="text-warning">Expires in 7 days</span>
+                                    </div>
+                                    <p class="mb-0">8 vials</p>
+                                </div>
+                                <div class="expiring-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Saline Solution (500ml)</strong>
+                                        <span class="text-warning">Expires in 14 days</span>
+                                    </div>
+                                    <p class="mb-0">42 bags</p>
+                                </div>
+                                <div class="expiring-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Morphine Sulfate</strong>
+                                        <span class="text-warning">Expires in 21 days</span>
+                                    </div>
+                                    <p class="mb-0">12 vials</p>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <a href="#" class="btn btn-sm btn-outline-primary">View All Expiring Items</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row">
+                    <!-- Category Summary Card -->
+                    <div class="col-md-6">
+                        <div class="card dashboard-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Inventory by Category</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <strong>PPE</strong>
+                                                <span class="badge bg-primary rounded-pill">1,042</span>
+                                            </li>
+                                            <li class="list-group-item ps-4 d-flex justify-content-between align-items-center">
+                                                Medication
+                                                <span class="badge bg-primary rounded-pill">328</span>
+                                            </li>
+                                            <li class="list-group-item ps-4 d-flex justify-content-between align-items-center">
+                                                Supplies
+                                                <span class="badge bg-primary rounded-pill">714</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <strong>Equipment</strong>
+                                                <span class="badge bg-primary rounded-pill">215</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <strong>Fluids</strong>
+                                                <span class="badge bg-primary rounded-pill">980</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <canvas id="categoryChart" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <!-- Stock Trends Card -->
+                    <div class="col-md-6">
+                        <div class="card dashboard-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Stock Level Trends</h5>
+                                <div class="mb-3">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="ppeCheck" checked>
+                                        <label class="form-check-label" for="ppeCheck">PPE</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="medCheck" checked>
+                                        <label class="form-check-label" for="medCheck">Medication</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="suppliesCheck" checked>
+                                        <label class="form-check-label" for="suppliesCheck">Supplies</label>
+                                    </div>
+                                </div>
+                                <canvas id="trendChart" height="180"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Expiring Items Card (full width below) -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card dashboard-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title">Expiring Items</h5>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="expiring-item">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Solution (500ml)</strong>
+                                                <span class="text-warning">14 days</span>
+                                            </div>
+                                            <p class="mb-0">42 bags</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="expiring-item">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Morphine Sulfate</strong>
+                                                <span class="text-warning">21 days</span>
+                                            </div>
+                                            <p class="mb-0">12 vials</p>
+                                        </div>
+                                    </div>
+                                    <!-- Add more expiring items as needed -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['PPE - Medication', 'PPE - Supplies', 'Equipment', 'Fluids'],
+                datasets: [{
+                    data: [328, 714, 215, 980],
+                    backgroundColor: [
+                        '#3498db',
+                        '#2ecc71',
+                        '#e74c3c',
+                        '#f39c12'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Trend Chart
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: 'PPE',
+                        data: [1200, 1350, 1500, 1650, 1800, 1750],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Medication',
+                        data: [800, 850, 900, 950, 1000, 1050],
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Supplies',
+                        data: [600, 650, 700, 750, 800, 850],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+    
+    </script>
+</body>
+</html>
